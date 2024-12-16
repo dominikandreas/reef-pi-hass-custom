@@ -1,20 +1,19 @@
 {
   "domain": "reef_pi2",
-  "version": "0.3.7",
   "name": "Reef PI Integration (2nd server)",
-  "config_flow": true,
-  "documentation": "https://github.com/dominikandreas/reef-pi-hass-custom",
-  "issue_tracker": "https://github.com/dominikandreas/reef-pi-hass-custom/issues",
-  "ssdp": [],
-  "zeroconf": [],
-  "homekit": {},
-  "requirements": [
-    "httpx>=0.21.0"
-  ],
-  "dependencies": [],
   "codeowners": [
     "@tdragon",
     "@alex255"
   ],
-  "iot_class": "local_polling"
+  "config_flow": true,
+  "dependencies": [
+    "http"
+  ],
+  "documentation": "https://github.com/dominikandreas/reef-pi-hass-custom",
+  "iot_class": "local_polling",
+  "issue_tracker": "https://github.com/dominikandreas/reef-pi-hass-custom/issues",
+  "requirements": [
+    "httpx>=0.21.0"
+  ],
+  "version": "0.3.11"
 }
