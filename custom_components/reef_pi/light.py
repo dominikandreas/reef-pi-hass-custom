@@ -1,10 +1,7 @@
 from math import ceil
 
-from homeassistant.components.light import (
-    ATTR_BRIGHTNESS,
-    ColorMode,
-    LightEntity,
-)
+from homeassistant.components.light import ATTR_BRIGHTNESS, LightEntity
+from homeassistant.components.light.const import ColorMode
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from .const import _LOGGER, DOMAIN
@@ -70,6 +67,11 @@ class ReefPiLight(CoordinatorEntity, LightEntity):
     def supported_color_modes(self) -> set[str] | None:
         """Flag supported color modes."""
         return {ColorMode.BRIGHTNESS}
+
+    @property
+    def color_mode(self) -> str | None:
+        """Return the color mode of the light."""
+        return ColorMode.BRIGHTNESS
 
     async def async_turn_off(self, **kwargs):
         """Turn the light off."""

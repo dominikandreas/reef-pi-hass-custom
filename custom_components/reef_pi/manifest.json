@@ -3,17 +3,19 @@
   "name": "Reef PI Integration (2nd server)",
   "codeowners": [
     "@tdragon",
-    "@alex255"
+    "@alex255",
+    "@danmrossi"
   ],
   "config_flow": true,
   "dependencies": [
-    "http"
+    "http",
+    "mqtt"
   ],
   "documentation": "https://github.com/dominikandreas/reef-pi-hass-custom",
   "iot_class": "local_polling",
   "issue_tracker": "https://github.com/dominikandreas/reef-pi-hass-custom/issues",
   "requirements": [
-    "httpx>=0.21.0"
+    "httpx>=0.27.0"
   ],
-  "version": "0.3.11"
+  "version": "0.4.4"
 }

@@ -4,7 +4,5 @@
   "domains": ["reef_pi2"],
   "documentation": "https://github.com/dominikandreas/reef-pi-hass-custom",
   "issue_tracker": "https://github.com/dominikandreas/reef-pi-hass-custom/issues",
-  "zip_release": true,
-  "filename": "reef_pi2.zip",
   "iot_class": ["Local Pull"]
 }

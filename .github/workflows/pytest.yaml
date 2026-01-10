@@ -5,29 +5,31 @@ name: pytest
 
 on:
   push:
-    branches: [ master, dev ]
+    branches: [master, dev]
+    tags-ignore:
+      - '**'  # Don't run on tag pushes (release workflow handles this)
   pull_request:
-    branches: [ master ]
+    branches: [master]
+  workflow_call:
 
 jobs:
   build:
-
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: ["3.12"]
+        python-version: ["3.13"]
 
     steps:
-    - uses: actions/checkout@v2
-    - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v1
-      with:
-        python-version: ${{ matrix.python-version }}
-    - name: Setup PDM
-      uses: pdm-project/setup-pdm@v4
-    - name: Install dependencies
-      run: |
-        pdm install
-    - name: Test with pytest
-      run: |
-        pdm run pytest
+      - uses: actions/checkout@v5
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v6
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Setup uv
+        uses: astral-sh/setup-uv@v7
+      - name: Install dependencies
+        run: |
+          uv sync
+      - name: Test with pytest
+        run: |
+          uv run pytest

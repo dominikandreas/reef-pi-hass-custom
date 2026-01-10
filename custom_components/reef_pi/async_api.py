@@ -1,11 +1,13 @@
 """Reef Pi api wrapper"""
 
-from typing import Any, Dict
-import httpx
-import json
+import logging
 from datetime import datetime
+from typing import Any, Dict
+
+import httpx
 
 REEFPI_DATETIME_FORMAT = "%b-%d-%H:%M, %Y"
+logger = logging.getLogger(__name__)
 
 
 class ReefApi:
@@ -50,9 +52,9 @@ class ReefApi:
         except httpx.HTTPError as exc:
             raise CannotConnect from exc
 
-        if not response.status_code == 200:
+        if response.status_code != 200:
             return {}
-        return json.loads(response.text)
+        return response.json()
 
     async def _post(self, api, payload) -> bool:
         if not self.is_authenticated():
@@ -63,7 +65,7 @@ class ReefApi:
                 url = f"{self.host}/api/{api}"
                 client.cookies = self.cookies
                 response = await client.post(url, json=payload, timeout=self.timeout)
-                return response.status_code == 200
+                return response.is_success
         except httpx.HTTPError as exc:
             raise CannotConnect from exc
 
@@ -85,6 +87,9 @@ class ReefApi:
     async def capabilities(self):
         return await self._get("capabilities")
 
+    async def telemetry_config(self):
+        return await self._get("telemetry")
+
     async def errors(self):
         return await self._get("errors")
 
@@ -94,20 +99,22 @@ class ReefApi:
     async def phprobes(self):
         return await self._get("phprobes")
 
-    async def ph_readings(self, id):
-        def get_time(x):
-            return (
-                datetime.strptime(x["time"], REEFPI_DATETIME_FORMAT)
-                if "time" in x.keys()
-                else datetime(1900, 1, 1)
-            )
+    async def ph_readings(self, id: int):
+        def get_time(x: dict[str, str]):
+            try:
+                return datetime.strptime(x["time"], REEFPI_DATETIME_FORMAT)
+            except Exception as e:
+                logger.error(f"Error parsing time: {e}")
+                return datetime(1900, 1, 1)
+
+        def get_latest_value(x: list[dict[str, str]] | None):
+            if not x:
+                return {"value": None}
+            latest = sorted(x, key=get_time)[-1].get("value")
+            return {"value": float(latest) if latest else None}
 
         readings = await self._get(f"phprobes/{id}/readings")
-        if readings and "current" in readings.keys() and len(readings["current"]):
-            return sorted(readings["current"], key=get_time)[-1]
-        if readings and "historical" in readings.keys() and len(readings["historical"]):
-            return sorted(readings["historical"], key=get_time)[-1]
-        return {"value": None}
+        return get_latest_value(readings.get("current"))
 
     async def ph(self, id):
         try:
@@ -141,9 +148,9 @@ class ReefApi:
                 url = f"{self.host}/api/inlets/{id}/read"
                 client.cookies = self.cookies
                 response = await client.post(url, json={}, timeout=self.timeout)
-                if not response.status_code == 200:
+                if response.status_code != 200:
                     return {}
-                return json.loads(response.text)
+                return response.json()
         except httpx.HTTPError as exc:
             raise CannotConnect from exc
 
@@ -184,6 +191,36 @@ class ReefApi:
 
     async def run_macro(self, id):
         return await self._post(f"macros/{id}/run", "")
+
+    async def reboot(self) -> bool:
+        return await self._post("admin/reboot", {})
+
+    async def power_off(self) -> bool:
+        return await self._post("admin/poweroff", {})
+
+    async def display_state(self) -> Dict[str, Any]:
+        return await self._get("display")
+
+    async def display_switch(self, on: bool) -> bool:
+        action = "on" if on else "off"
+        return await self._post(f"display/{action}", {})
+
+    async def display_brightness(self, value: int) -> bool:
+        payload = {"brightness": value}
+        return await self._post("display", payload)
+
+    async def ph_probe_calibrate(
+        self, id: int, measurements: list[dict[str, float]]
+    ) -> bool:
+        return await self._post(f"phprobes/{id}/calibrate", measurements)
+
+    async def ph_probe_calibrate_point(
+        self, id: int, expected: float, observed: float, type_: str | None = None
+    ) -> bool:
+        payload: dict[str, float | str] = {"expected": expected, "observed": observed}
+        if type_:
+            payload["type"] = type_
+        return await self._post(f"phprobes/{id}/calibratepoint", payload)
 
 
 class CannotConnect(Exception):

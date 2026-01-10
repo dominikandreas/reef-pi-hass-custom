@@ -2,12 +2,17 @@ name: hassfest
 
 on:
   push:
+    branches:
+      - '**'  # All branches
+    tags-ignore:
+      - '**'  # Don't run on tag pushes (release workflow handles this)
   pull_request:
   schedule:
     - cron: "0 0 * * *"
+  workflow_call:
 jobs:
   validate:
     runs-on: "ubuntu-latest"
     steps:
-      - uses: "actions/checkout@v4"
+      - uses: "actions/checkout@v5"
       - uses: "home-assistant/actions/hassfest@master"

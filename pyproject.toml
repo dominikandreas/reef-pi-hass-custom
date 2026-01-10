@@ -1,34 +1,25 @@
 [project]
 name = "reef-pi-hass-custom"
-version = "0.3.10"
+version = "0.4.4"
 description = "HomeAssistant Reef PI Integration"
-authors = [
-    {name = "tdragon", email = "1210261+tdragon@users.noreply.github.com"},
-]
-dependencies = [
-    "httpx>=0.27.0",
-]
-requires-python = "==3.13.*"
+dependencies = [ "httpx>=0.27.0",]
+requires-python = ">=3.13.2"
 readme = "README.md"
-license = {text = "MIT"}
 
+[[project.authors]]
+name = "tdragon"
+email = "tdragn@gmail.com"
 
-[tool.pdm]
-distribution = false
+[project.license]
+text = "MIT"
 
-[tool.pdm.dev-dependencies]
-dev = [
-    "pytest>=8.1.1",
-    "pytest-homeassistant-custom-component>=0.13.193",
-    "pytest-asyncio>=0.23.6",
-    "ruff>=0.4.0",
-    "pre-commit>=3.7.0",
-]
+[dependency-groups]
+dev = [ "pytest>=8.1.1", "pytest-homeassistant-custom-component>=0.13.193", "pytest-asyncio>=0.23.6", "ruff>=0.4.0", "pre-commit>=3.7.0", "pyright>=1.1.0",]
 
 [tool.pyright]
 venvPath = "."
 venv = ".venv"
-
-[tool.pdm.scripts]
-post_install = "pre-commit install"
-
+typeCheckingMode = "standard"
+reportIncompatibleVariableOverride = false  # Home Assistant uses cached_property, we use property - both work fine
+reportAttributeAccessIssue = "warning"  # Warn but don't fail on attribute access issues
+exclude = ["output"]

@@ -1,6 +1,11 @@
+import json
+import os
+
 REEF_MOCK_URL = "http://192.168.1.123"
 REEF_MOCK_USER = "reef_pi"
 REEF_MOCK_PASSWORD = "reef_password"
+
+PAYLOAD_DIR = os.path.join(os.getcwd(), "tests/payloads")
 
 
 def mock_signin(mock, url=REEF_MOCK_URL):
@@ -16,7 +21,7 @@ def mock_capabilities(mock, ph=True, url=REEF_MOCK_URL):
             "health_check": False,
             "equipment": True,
             "timers": False,
-            "lighting": False,
+            "lighting": True,
             "temperature": True,
             "ato": True,
             "camera": False,
@@ -50,27 +55,18 @@ def mock_phprobes(mock, url=REEF_MOCK_URL):
                 "one_shot": False,
                 "chart": {"ymin": 0, "ymax": 0, "color": "", "unit": ""},
             },
-            {
-                "id": "7",
-                "name": "pH No current",
-                "enable": True,
-            },
-            {
-                "id": "8",
-                "name": "pH No history",
-                "enable": True,
-            },
         ],
     )
 
 
 def mock_ph6(mock, url=REEF_MOCK_URL):
-    mock.get(f"{url}/api/phprobes/6/read").respond(200, json="6.31")
-
-
-def mock_ph78(mock, url=REEF_MOCK_URL):
-    mock.get(f"{url}/api/phprobes/7/read").respond(200, json="7.23")
-    mock.get(f"{url}/api/phprobes/8/read").respond(200, json="")
+    with open(os.path.join(PAYLOAD_DIR, "ph_readings.json"), "rt") as payload:
+        ph_readings = json.loads(payload.read())
+        mock.get(f"{url}/api/phprobes/6/readings").respond(
+            200,
+            json=ph_readings,
+        )
+    mock.get(f"{url}/api/phprobes/6/read").respond(200, json={"value": 6.66})
 
 
 def mock_info(mock, url=REEF_MOCK_URL):
@@ -84,6 +80,38 @@ def mock_info(mock, url=REEF_MOCK_URL):
             "cpu_temperature": "39.0'C\n",
             "version": "4.1",
             "model": "Raspberry Pi 2 Model B Rev 1.1\x00",
+        },
+    )
+
+
+def mock_telemetry(mock, url=REEF_MOCK_URL, mqtt_enabled=False):
+    mock.get(f"{url}/api/telemetry").respond(
+        200,
+        json={
+            "adafruitio": {"enable": False, "token": "", "user": "", "prefix": ""},
+            "mqtt": {
+                "enable": mqtt_enabled,
+                "server": "tcp://127.0.0.1:1883",
+                "username": "",
+                "client_id": "reef-pi.local",
+                "password": "",
+                "qos": 0,
+                "retained": False,
+                "prefix": "reef-pi",
+            },
+            "mailer": {
+                "server": "",
+                "port": 0,
+                "from": "",
+                "username": "",
+                "password": "",
+                "to": [],
+            },
+            "notify": False,
+            "prometheus": False,
+            "throttle": 30,
+            "historical_limit": 7,
+            "current_limit": 1,
         },
     )
 
@@ -122,14 +150,287 @@ def mock_atos(mock, url=REEF_MOCK_URL, empty_usage=False):
         )
 
 
+def mock_lights(mock, url=REEF_MOCK_URL):
+    mock.get(f"{url}/api/lights").respond(
+        200,
+        json=[
+            {
+                "id": "1",
+                "channels": {
+                    "red": {
+                        "manual": True,
+                        "name": "Red",
+                        "value": 0.5,
+                    }
+                },
+                "name": "ReefPi Light",
+            },
+        ],
+    )
+
+
 def mock_all(mock, url=REEF_MOCK_URL, has_ph=True, has_ato_usage=True):
     mock_signin(mock)
     mock_capabilities(mock)
     mock_info(mock)
+    mock_telemetry(mock)
     mock_phprobes(mock)
     mock_ph6(mock)
-    mock_ph78(mock)
     mock_atos(mock, empty_usage=not has_ato_usage)
+    mock_lights(mock)
+
+    mock.get(f"{url}/api/doser/pumps").respond(
+        200,
+        json=[
+            {
+                "id": "1",
+                "name": "Pump1 sched1",
+                "jack": "1",
+                "pin": 0,
+                "regiment": {
+                    "enable": True,
+                    "schedule": {
+                        "day": "*",
+                        "hour": "19",
+                        "minute": "30",
+                        "second": "0",
+                        "week": "*",
+                        "month": "*",
+                    },
+                    "duration": 15,
+                    "speed": 20,
+                },
+            },
+            {
+                "id": "2",
+                "name": "Pump1 sched2",
+                "jack": "1",
+                "pin": 0,
+                "regiment": {
+                    "enable": True,
+                    "schedule": {
+                        "day": "*",
+                        "hour": "20",
+                        "minute": "30",
+                        "second": "0",
+                        "week": "*",
+                        "month": "*",
+                    },
+                    "duration": 15,
+                    "speed": 20,
+                },
+            },
+            {
+                "id": "3",
+                "name": "Pump2 sched1",
+                "jack": "2",
+                "pin": 1,
+                "regiment": {
+                    "enable": True,
+                    "schedule": {
+                        "day": "*",
+                        "hour": "21",
+                        "minute": "30",
+                        "second": "0",
+                        "week": "*",
+                        "month": "*",
+                    },
+                    "duration": 15,
+                    "speed": 20,
+                },
+            },
+            {
+                "id": "4",
+                "name": "Pump2 sched1",
+                "jack": "2",
+                "pin": 2,
+                "regiment": {
+                    "enable": True,
+                    "schedule": {
+                        "day": "*",
+                        "hour": "22",
+                        "minute": "30",
+                        "second": "0",
+                        "week": "*",
+                        "month": "*",
+                    },
+                    "duration": 15,
+                    "speed": 20,
+                },
+            },
+            {
+                "id": "5",
+                "name": "No history",
+                "jack": "3",
+                "pin": 0,
+                "regiment": {
+                    "enable": True,
+                    "schedule": {
+                        "day": "*",
+                        "hour": "22",
+                        "minute": "30",
+                        "second": "0",
+                        "week": "*",
+                        "month": "*",
+                    },
+                    "duration": 15,
+                    "speed": 20,
+                },
+            },
+        ],
+    )
+
+    mock.get(f"{url}/api/doser/pumps/1/usage").respond(
+        200,
+        json={
+            "current": [
+                {"pump": 11, "time": "Aug-18-14:05, 2021"},
+                {"pump": 15, "time": "Aug-18-19:30, 2021"},
+                {"pump": 15, "time": "Aug-19-19:30, 2021"},
+                {"pump": 15, "time": "Aug-20-19:30, 2021"},
+                {"pump": 15, "time": "Aug-21-19:30, 2021"},
+                {"pump": 15, "time": "Aug-22-19:30, 2021"},
+                {"pump": 15, "time": "Aug-23-19:30, 2021"},
+            ],
+            "historical": [
+                {"pump": 26, "time": "Aug-18-14:05, 2021"},
+                {"pump": 15, "time": "Aug-19-19:30, 2021"},
+                {"pump": 15, "time": "Aug-20-19:30, 2021"},
+                {"pump": 15, "time": "Aug-21-19:30, 2021"},
+                {"pump": 15, "time": "Aug-22-19:30, 2021"},
+                {"pump": 15, "time": "Aug-23-19:30, 2021"},
+            ],
+        },
+    )
+
+    mock.get(f"{url}/api/doser/pumps/2/usage").respond(
+        200,
+        json={
+            "current": [
+                {"pump": 11, "time": "Aug-18-14:05, 2021"},
+                {"pump": 15, "time": "Aug-18-19:30, 2021"},
+                {"pump": 15, "time": "Aug-19-19:30, 2021"},
+                {"pump": 15, "time": "Aug-20-19:30, 2021"},
+                {"pump": 15, "time": "Aug-21-19:30, 2021"},
+                {"pump": 15, "time": "Aug-22-19:30, 2021"},
+                {"pump": 15, "time": "Aug-23-20:30, 2021"},
+            ],
+            "historical": [
+                {"pump": 26, "time": "Aug-18-14:05, 2021"},
+                {"pump": 15, "time": "Aug-19-19:30, 2021"},
+                {"pump": 15, "time": "Aug-20-19:30, 2021"},
+                {"pump": 15, "time": "Aug-21-19:30, 2021"},
+                {"pump": 15, "time": "Aug-22-21:30, 2021"},
+            ],
+        },
+    )
+
+    mock.get(f"{url}/api/doser/pumps/3/usage").respond(
+        200,
+        json={
+            "current": [
+                {"pump": 11, "time": "Aug-18-14:05, 2021"},
+                {"pump": 15, "time": "Aug-18-19:30, 2021"},
+                {"pump": 15, "time": "Aug-19-19:30, 2021"},
+                {"pump": 15, "time": "Aug-20-19:30, 2021"},
+                {"pump": 15, "time": "Aug-21-19:30, 2021"},
+                {"pump": 15, "time": "Aug-23-21:30, 2021"},
+            ],
+            "historical": [
+                {"pump": 26, "time": "Aug-18-14:05, 2021"},
+                {"pump": 15, "time": "Aug-19-19:30, 2021"},
+                {"pump": 15, "time": "Aug-20-19:30, 2021"},
+                {"pump": 15, "time": "Aug-21-19:30, 2021"},
+                {"pump": 15, "time": "Aug-22-19:30, 2021"},
+                {"pump": 15, "time": "Aug-23-22:30, 2021"},
+            ],
+        },
+    )
+
+    mock.get(f"{url}/api/doser/pumps/4/usage").respond(
+        200,
+        json={
+            "historical": [
+                {"pump": 26, "time": "Aug-18-14:05, 2021"},
+                {"pump": 15, "time": "Aug-19-19:30, 2021"},
+                {"pump": 15, "time": "Aug-20-19:30, 2021"},
+                {"pump": 15, "time": "Aug-21-19:30, 2021"},
+                {"pump": 15, "time": "Aug-22-19:30, 2021"},
+                {"pump": 15, "time": "Aug-23-19:30, 2021"},
+            ]
+        },
+    )
+
+    mock.get(f"{url}/api/doser/pumps/5/usage").respond(200, json={})
+
+    mock.get(f"{url}/api/equipment").respond(
+        200,
+        json=[
+            {
+                "id": "1",
+                "name": "Old light",
+                "outlet": "1",
+                "on": True,
+                "stay_off_on_boot": False,
+            },
+            {
+                "id": "17",
+                "name": "Led light 1",
+                "outlet": "17",
+                "on": False,
+                "stay_off_on_boot": False,
+            },
+            {
+                "id": "18",
+                "name": "Led light 2",
+                "outlet": "18",
+                "on": True,
+                "stay_off_on_boot": False,
+            },
+            {
+                "id": "19",
+                "name": "CO2",
+                "outlet": "19",
+                "on": True,
+                "stay_off_on_boot": False,
+            },
+            {
+                "id": "20",
+                "name": "Heater",
+                "outlet": "20",
+                "on": False,
+                "stay_off_on_boot": False,
+            },
+            {
+                "id": "21",
+                "name": "Cooler",
+                "outlet": "21",
+                "on": False,
+                "stay_off_on_boot": False,
+            },
+        ],
+    )
+
+    mock.get(f"{url}/api/tcs").respond(
+        200, json=[{"id": "1", "name": "Temp", "fahrenheit": False}]
+    )
+
+    mock.get(f"{url}/api/tcs/1/current_reading").respond(
+        200, json={"temperature": "25.0"}
+    )
+
+    mock.get(f"{url}/api/inlets").respond(200, json={})
+
+
+def mock_all_mqtt_enabled(mock, url=REEF_MOCK_URL, has_ph=True, has_ato_usage=True):
+    mock_signin(mock)
+    mock_capabilities(mock)
+    mock_info(mock)
+    mock_telemetry(mock, mqtt_enabled=True)
+    mock_phprobes(mock)
+    mock_ph6(mock)
+    mock_atos(mock, empty_usage=not has_ato_usage)
+    mock_lights(mock)
 
     mock.get(f"{url}/api/doser/pumps").respond(
         200,
